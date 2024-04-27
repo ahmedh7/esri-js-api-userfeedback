@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>ArcGIS Maps SDK for JavaScript Tutorials: Display a map</title>
+
+    <style>
+      html,
+      body{
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #viewDiv {
+        height: 70%;
+        width: 100%;
+      }
+
+      #info {
+      padding: 14px;
+      border-radius: 5px;
+    }
+
+    .scroller {
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+      .container {
+        height: 30%;
+        width: 100%;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css">
+    <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/2.5.1/calcite.css" />
+    
+    <script src="https://js.arcgis.com/4.29/"></script>
+    <script type="text/javascript" src="./script.js"></script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+    <div id="add" class="esri-widget esri-hidden">
+        <div id="formDiv" class="scroller esri-component"></div>
+        <input type="button" class="esri-button" value="Save Feedback" id="btnsave" />
+    </div>
+    <div class="container">
+        <div id="tableDiv"></div>
+    </div>
+   
+    <calcite-button id="btnAddPoint" icon-start="plus-square" label="Add feedback">Add feedback</calcite-button>
+
+    
+    </body>
+</html>
