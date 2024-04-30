@@ -14,13 +14,14 @@ require(["esri/config",
     "esri/widgets/FeatureForm",
     "esri/layers/support/CodedValueDomain",
     "esri/renderers/UniqueValueRenderer",
-    "esri/symbols/SimpleFillSymbol",
+    "esri/symbols/SimpleMarkerSymbol",
     "esri/widgets/Legend",
     "esri/widgets/Legend/LegendViewModel",
+    "esri/Color"
 ],
     function (esriConfig, Map, MapView, WebTileLayer, Basemap, BasemapToggle, Home, ScaleBar, FeatureLayer,
-        FeatureTable, Graphic, FeatureForm, CodedValueDomain, UniqueValueRenderer, SimpleFillSymbol,
-        Legend, LegendViewModel) {
+        FeatureTable, Graphic, FeatureForm, CodedValueDomain, UniqueValueRenderer, SimpleMarkerSymbol,
+        Legend, LegendViewModel, Color) {
 
         //esriConfig.apiKey = "YOUR_API_KEY";
 
@@ -88,9 +89,40 @@ require(["esri/config",
             "content": "<b>BY:</b> {name}<br><b>Message:</b> {message}<br><b>Email:</b> {email}<br><b>Type:</b> {feedbackType}<br>"
         }
         var renderer = new UniqueValueRenderer({
-            field: "Name",
-            defaultSymbol: new SimpleFillSymbol()
-          });
+            field: "feedbackType",
+            uniqueValueInfos: [{
+                value: 1,
+                symbol: new SimpleMarkerSymbol({
+                    style: "square",
+                    color: new Color([105, 0, 105])
+                })
+            }, {
+                
+                value: 2,
+                symbol: new SimpleMarkerSymbol({
+                    style:"x",
+                    color: new Color([105, 255, 105])
+                })
+            }, {
+                value: 3,
+                symbol: new SimpleMarkerSymbol({
+                    style: "diamond",
+                    color: new Color([105, 255, 0])
+                })
+            }, {
+                value: 4,
+                symbol: new SimpleMarkerSymbol({
+                    style: "circle",
+                    color: new Color([0, 255, 105])
+                })
+            },{
+                value: 5,
+                symbol: new SimpleMarkerSymbol({
+                    style:"triangle",
+                    color: new Color([255, 105, 0])
+                })
+            }]
+        });
         const layer = new FeatureLayer({
             title: "User Feedback",
             fields: [
@@ -128,8 +160,8 @@ require(["esri/config",
             spatialReference: { wkid: 4326 },
             source: graphics,
             popupTemplate: popup,
-            //renderer: renderer,
-           
+            renderer: renderer,
+
             formTemplate: { // Autocasts to new FormTemplate
                 title: "Add Feedback",
                 description: "Provide user and feedback info",
@@ -240,7 +272,7 @@ require(["esri/config",
                 }, 100);
             });
 
-           
+
             view.ui.add(scaleBar, "bottom-left");
             view.ui.add(homeBtn, "top-left");
             view.ui.add(addBtn, "top-right");
@@ -357,7 +389,7 @@ require(["esri/config",
             }
         });
 
-        
+
         // Call FeatureLayer.applyEdits() with specified params.
         function applyAttributeUpdates(params) {
             console.log(params)
@@ -373,7 +405,7 @@ require(["esri/config",
                         selectFeature(currentObjID);
                     } else if (editsResult.updateFeatureResults.length > 0) {
                         console.log("updated");
-                        stopAdding(isUpdateOperation=true);
+                        stopAdding(isUpdateOperation = true);
                         featureTable.refresh();
                         unselectFeatures();
                     } else if (editsResult.deleteFeatureResults.length > 0) {
@@ -381,7 +413,7 @@ require(["esri/config",
                         featureTable.refresh();
 
                     }
-                    
+
                 })
                 .catch((error) => {
                     console.log("===============================================");
@@ -410,20 +442,20 @@ require(["esri/config",
                 })
         }
 
-        
+
         ////////////////////////// custom legend
 
         const legendViewModel = new LegendViewModel({
             view: view,
+            basemapLegendVisible: true,
+            headingLevel: 2,
+            hideLayersNotInCurrentView: true,
+            respectLayerVisibility: true,
 
         });
         let legend = new Legend({
             view: view,
-            basemapLegendVisible: true,
-            headingLevel: 2,
-            hideLayersNotInCurrentView: true,
             viewModel: legendViewModel,
-
 
         })
         view.ui.add(legend, "bottom-left");
