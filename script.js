@@ -14,10 +14,13 @@ require(["esri/config",
     "esri/widgets/FeatureForm",
     "esri/layers/support/CodedValueDomain",
     "esri/renderers/UniqueValueRenderer",
-    "esri/symbols/SimpleFillSymbol"
+    "esri/symbols/SimpleFillSymbol",
+    "esri/widgets/Legend",
+    "esri/widgets/Legend/LegendViewModel",
 ],
     function (esriConfig, Map, MapView, WebTileLayer, Basemap, BasemapToggle, Home, ScaleBar, FeatureLayer,
-        FeatureTable, Graphic, FeatureForm, CodedValueDomain, UniqueValueRenderer, SimpleFillSymbol) {
+        FeatureTable, Graphic, FeatureForm, CodedValueDomain, UniqueValueRenderer, SimpleFillSymbol,
+        Legend, LegendViewModel) {
 
         //esriConfig.apiKey = "YOUR_API_KEY";
 
@@ -245,11 +248,6 @@ require(["esri/config",
             view.ui.add("add", "top-right");
 
         });
-
-
-
-
-
         map.add(layer);
 
         /////////////////////////////////////////// Create features after button click////////////////////////
@@ -261,20 +259,6 @@ require(["esri/config",
             map: map, // Required if using Arcade expressions that use the global $map variable
             layer: layer
         });
-
-        function stopAdding() {
-            mouseEvtHandler.remove();
-            mouseEvtHandler = null;
-            addBtn.innerHTML = "Add Feedback";
-            document.getElementById("add").classList.add("esri-hidden");
-            if (currentObjID) {
-                deleteFeature(currentObjID);
-            }
-        }
-        function startAdding() {
-            mouseEvtHandler = view.on("click", eventHandler);
-            addBtn.innerHTML = "Stop Adding";
-        }
         addBtn.addEventListener("click", function () {
             if (mouseEvtHandler) {
                 stopAdding();
@@ -282,38 +266,19 @@ require(["esri/config",
                 startAdding();
             }
         });
-        function eventHandler(evt) {
+        function startAdding() {
+            mouseEvtHandler = view.on("click", eventHandler);
+            addBtn.innerHTML = "Stop Adding";
+        }
+        function stopAdding(isUpdateOperation) {
             mouseEvtHandler.remove();
-            document.getElementById("add").classList.remove("esri-hidden");
-            const mapPoint = evt.mapPoint;
-            console.log(mapPoint);
-            let graphic = new Graphic({
-                geometry: {
-                    type: "point",
-                    y: mapPoint.latitude,
-                    x: mapPoint.longitude
-                },
-                attributes: {
-                    "name": "tempName",
-                    "email": "tempMail",
-                    "feedbackType": 5,
-                    "message": "tempMsg"
-                }
-            });
-
-            graphics = [graphic];
-            const addEdits = {
-                addFeatures: graphics
-            };
-            applyAttributeUpdates(addEdits);
-
-
+            mouseEvtHandler = null;
+            addBtn.innerHTML = "Add Feedback";
+            document.getElementById("add").classList.add("esri-hidden");
+            if (currentObjID && !isUpdateOperation) {
+                deleteFeature(currentObjID);
+            }
         }
-
-        function unselectFeatures() {
-            highlight.remove();
-        }
-
         // Highlight the created feature and display its attributes in the featureform.
         function selectFeature(objectId) {
             // query feature from the server
@@ -341,7 +306,39 @@ require(["esri/config",
                     }
                 });
         }
+        function unselectFeatures() {
+            highlight.remove();
+        }
+        function eventHandler(evt) {
+            mouseEvtHandler.remove();
+            document.getElementById("add").classList.remove("esri-hidden");
+            const mapPoint = evt.mapPoint;
+            console.log(mapPoint);
+            let graphic = new Graphic({
+                geometry: {
+                    type: "point",
+                    y: mapPoint.latitude,
+                    x: mapPoint.longitude
+                },
+                attributes: {
+                    "name": "tempName",
+                    "email": "tempMail",
+                    "feedbackType": 5,
+                    "message": "tempMsg"
+                }
+            });
 
+            graphics = [graphic];
+            const addEdits = {
+                addFeatures: graphics
+            };
+            applyAttributeUpdates(addEdits);
+
+
+        }
+        document.getElementById("btnsave").onclick = () => {
+            form.submit();
+        };
         form.on("submit", () => {
             if (editFeature) {
                 // Grab updated attributes from the form.
@@ -356,21 +353,11 @@ require(["esri/config",
                 const edits = {
                     updateFeatures: [editFeature]
                 };
-                layer.applyEdits(edits).then((editsResult) => {
-                    // Get the objectId of the newly added feature.
-                    // Call selectFeature function to highlight the updated feature.
-                    if (editsResult.updateFeatureResults.length > 0) {
-                        console.log("updated");
-                        currentObjID = null;
-                        stopAdding();
-                        unselectFeatures();
-                    }
-                });
-
-
+                applyAttributeUpdates(edits);
             }
         });
 
+        
         // Call FeatureLayer.applyEdits() with specified params.
         function applyAttributeUpdates(params) {
             console.log(params)
@@ -382,15 +369,19 @@ require(["esri/config",
                     // Call selectFeature function to highlight the new feature.
                     if (editsResult.addFeatureResults.length > 0) {
                         console.log("added");
-                        const currentObjID = editsResult.addFeatureResults[0].objectId;
+                        currentObjID = editsResult.addFeatureResults[0].objectId;
                         selectFeature(currentObjID);
                     } else if (editsResult.updateFeatureResults.length > 0) {
                         console.log("updated");
+                        stopAdding(isUpdateOperation=true);
+                        featureTable.refresh();
                         unselectFeatures();
                     } else if (editsResult.deleteFeatureResults.length > 0) {
                         console.log("deleted");
+                        featureTable.refresh();
+
                     }
-                    featureTable.refresh();
+                    
                 })
                 .catch((error) => {
                     console.log("===============================================");
@@ -403,9 +394,6 @@ require(["esri/config",
                     console.log("error = ", error);
                 });
         }
-
-
-
         function deleteFeature(objectId) {
             console.log(objectId);
             layer
@@ -422,7 +410,24 @@ require(["esri/config",
                 })
         }
 
-        document.getElementById("btnsave").onclick = () => {
-            form.submit();
-        };
+        
+        ////////////////////////// custom legend
+
+        const legendViewModel = new LegendViewModel({
+            view: view,
+
+        });
+        let legend = new Legend({
+            view: view,
+            basemapLegendVisible: true,
+            headingLevel: 2,
+            hideLayersNotInCurrentView: true,
+            viewModel: legendViewModel,
+
+
+        })
+        view.ui.add(legend, "bottom-left");
+
+
     });
+
